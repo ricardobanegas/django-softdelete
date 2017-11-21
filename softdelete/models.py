@@ -135,6 +135,11 @@ class SoftDeleteManager(models.Manager):
 
 
 class SoftDeleteObject(models.Model):
+    SOFT_DELETE = 0
+    SOFT_DELETE_CASCADE = 1
+
+    softdelete_policy = SOFT_DELETE_CASCADE
+
     deleted_at = models.DateTimeField(blank=True, null=True, default=None)
     objects = SoftDeleteManager()
 
@@ -162,29 +167,37 @@ class SoftDeleteObject(models.Model):
 
     deleted = property(get_deleted, set_deleted)
 
-    def _do_delete(self, changeset, related):
+    def _do_delete(self, changeset, related, force_policy=None):
         rel = related.get_accessor_name()
 
         # Sometimes there is nothing to delete
         if not hasattr(self, rel):
             return
 
+        delete_kwargs = {
+            'changeset': changeset
+        }
+        if force_policy:
+            delete_kwargs['force_policy'] = force_policy
+
         try:
             if related.one_to_one:
-                getattr(self, rel).delete(changeset=changeset)
+                getattr(self, rel).delete(**delete_kwargs)
             else:
-                getattr(self, rel).all().delete(changeset=changeset)
+                getattr(self, rel).all().delete(**delete_kwargs)
         except:
             try:
                 getattr(self, rel).all().delete()
             except:
                 try:
                     getattr(self, rel).__class__.objects.all().delete(
-                        changeset=changeset)
+                        **delete_kwargs)
                 except:
                     getattr(self, rel).__class__.objects.all().delete()
 
     def delete(self, *args, **kwargs):
+        policy = kwargs.get('force_policy', self.softdelete_policy)
+
         if self.deleted_at:
             logging.debug("HARD DELETEING type %s, %s", type(self), self)
             try:
@@ -207,7 +220,7 @@ class SoftDeleteObject(models.Model):
                     super(SoftDeleteObject, self).delete(*args, **kwargs)
                 except:
                     pass
-        else:
+        elif policy in [self.SOFT_DELETE, self.SOFT_DELETE_CASCADE]:
             using = kwargs.get('using', settings.DATABASES['default'])
             models.signals.pre_delete.send(sender=self.__class__,
                                            instance=self,
@@ -223,20 +236,22 @@ class SoftDeleteObject(models.Model):
                 object_id=self.pk)
             self.deleted_at = timezone.now()
             self.save()
-            all_related = [
-                f for f in self._meta.get_fields()
-                if (f.one_to_many or f.one_to_one)
-                and f.auto_created and not f.concrete
-            ]
-            for x in all_related:
-                self._do_delete(cs, x)
-            logging.debug("FINISHED SOFT DELETING RELATED %s", self)
-            models.signals.post_delete.send(sender=self.__class__,
-                                            instance=self,
-                                            using=using)
-            post_soft_delete.send(sender=self.__class__,
-                                  instance=self,
-                                  using=using)
+
+            if policy == self.SOFT_DELETE_CASCADE:
+                all_related = [
+                    f for f in self._meta.get_fields()
+                    if (f.one_to_many or f.one_to_one)
+                    and f.auto_created and not f.concrete
+                ]
+                for x in all_related:
+                    self._do_delete(cs, x)
+                logging.debug("FINISHED SOFT DELETING RELATED %s", self)
+                models.signals.post_delete.send(sender=self.__class__,
+                                                instance=self,
+                                                using=using)
+                post_soft_delete.send(sender=self.__class__,
+                                      instance=self,
+                                      using=using)
 
     def _do_undelete(self, using='default'):
         pre_undelete.send(sender=self.__class__,

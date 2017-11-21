@@ -3,7 +3,15 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.db import models
-from softdelete.test_softdelete_app.models import TestModelOne, TestModelTwo, TestModelThree, TestModelThrough
+from softdelete.test_softdelete_app.models import (
+    TestModelOne,
+    TestModelTwo,
+    TestModelThree,
+    TestModelThrough,
+    TestModelSafeDeleteCascade,
+    TestModelSoftDelete,
+    TestModelDefault
+)
 from softdelete.models import *
 from softdelete.signals import *
 import logging
@@ -46,6 +54,13 @@ class BaseTest(TestCase):
         self.unauthorized = User.objects.create_user(username='NonSoftdeleteUser',
                                                      password='NonSoftdeletePassword',
                                                      email='nonsoftdeleteuser@example.com')
+        ## Setup for delete policy tests
+        self.tmo_soft_delete_cascade = TestModelSafeDeleteCascade.objects.create(
+            extra_int=100)
+        self.tmo_soft_delete = TestModelSoftDelete.objects.create(
+            parent=self.tmo_soft_delete_cascade)
+        self.tmo_delete_default = TestModelDefault.objects.create(
+            parent=self.tmo_soft_delete)
 
 
 class InitialTest(BaseTest):
@@ -128,6 +143,16 @@ class DeleteTest(BaseTest):
                           TestModelOne.objects.get,
                           pk=tmo_tmp.pk)
 
+    def test_soft_delete_policy(self):
+        self.tmo_soft_delete.delete()
+        self.tmo_delete_default.refresh_from_db()
+        self.assertIsNone(self.tmo_delete_default.deleted_at)
+
+    def test_soft_delete_cascade_policy(self):
+        self.tmo_soft_delete_cascade.delete()
+        self.tmo_soft_delete = TestModelSoftDelete.objects.all_with_deleted().filter(
+            parent=self.tmo_soft_delete_cascade).first()
+        self.assertIsNotNone(self.tmo_soft_delete.deleted_at)
 
     def test_filter_delete(self):
         self._pretest()
