@@ -18,9 +18,22 @@ class TestModelThrough(SoftDeleteObject):
     tmo1 = models.ForeignKey(TestModelOne, related_name="left_side")
     tmo3 = models.ForeignKey(TestModelThree, related_name='right_side')
 
+class TestModelSafeDeleteCascade(SoftDeleteObject):
+    softdelete_policy = SoftDeleteObject.SOFT_DELETE_CASCADE
+    extra_int = models.IntegerField()
+
+class TestModelSoftDelete(SoftDeleteObject):
+    softdelete_policy = SoftDeleteObject.SOFT_DELETE
+    parent = models.ForeignKey(TestModelSafeDeleteCascade, related_name='x')
+
+class TestModelDefault(SoftDeleteObject):
+    parent = models.ForeignKey(TestModelSoftDelete, related_name='y')
+
 
 admin.site.register(TestModelOne, SoftDeleteObjectAdmin)
 admin.site.register(TestModelTwo, SoftDeleteObjectAdmin)
 admin.site.register(TestModelThree, SoftDeleteObjectAdmin)
 admin.site.register(TestModelThrough, SoftDeleteObjectAdmin)
-
+admin.site.register(TestModelSafeDeleteCascade, SoftDeleteObjectAdmin)
+admin.site.register(TestModelSoftDelete, SoftDeleteObjectAdmin)
+admin.site.register(TestModelDefault, SoftDeleteObjectAdmin)
