@@ -120,16 +120,10 @@ class SoftDeleteManager(models.Manager):
         return qs
 
     def get(self, *args, **kwargs):
-        if 'pk' in kwargs:
-            return self.all_with_deleted().get(*args, **kwargs)
-        else:
-            return self._get_self_queryset().get(*args, **kwargs)
+        return self._get_self_queryset().get(*args, **kwargs)
 
     def filter(self, *args, **kwargs):
-        if 'pk' in kwargs:
-            qs = self.all_with_deleted().filter(*args, **kwargs)
-        else:
-            qs = self._get_self_queryset().filter(*args, **kwargs)
+        qs = self._get_self_queryset().filter(*args, **kwargs)
         qs.__class__ = SoftDeleteQuerySet
         return qs
 
@@ -291,9 +285,10 @@ class ChangeSet(models.Model):
         ]
 
     def get_content(self):
-        self.record = self.content_type.model_class().objects.get(
-            pk=self.object_id)
-        return self.record
+        model_class = self.content_type.model_class()
+        if isinstance(model_class.objects, SoftDeleteManager):
+            return model_class.objects.all_with_deleted().get(pk=self.object_id)
+        return model_class.objects.get(pk=self.object_id)
 
     def set_content(self, obj):
         self.record = obj
@@ -326,8 +321,10 @@ class SoftDeleteRecord(models.Model):
         ]
 
     def get_content(self):
-        self.record = self.content_type.model_class().objects.get(pk=self.object_id)
-        return self.record
+        model_class = self.content_type.model_class()
+        if isinstance(model_class.objects, SoftDeleteManager):
+            return model_class.objects.all_with_deleted().get(pk=self.object_id)
+        return model_class.objects.get(pk=self.object_id)
 
     def set_content(self, obj):
         self.record = obj

@@ -113,8 +113,8 @@ class DeleteTest(BaseTest):
         self.rs_count = SoftDeleteRecord.objects.count()
 
     def _posttest(self):
-        self.tmo1 = TestModelOne.objects.get(pk=self.tmo1.pk)
-        self.tmo2 = TestModelOne.objects.get(pk=self.tmo2.pk)
+        self.tmo1 = TestModelOne.objects.all_with_deleted().get(pk=self.tmo1.pk)
+        self.tmo2 = TestModelOne.objects.all_with_deleted().get(pk=self.tmo2.pk)
         self.assertTrue(self.tmo1.deleted)
         self.assertFalse(self.tmo2.deleted)
         self.assertTrue(self.pre_delete_called)
@@ -176,7 +176,7 @@ class AdminTest(BaseTest):
         tmo = client.post('/admin/test_softdelete_app/testmodelone/1/',
                           {'extra_bool': '1', 'deleted': '1'})
         self.assertEquals(tmo.status_code, 302)
-        self.tmo1 = TestModelOne.objects.get(pk=self.tmo1.pk)
+        self.tmo1 = TestModelOne.objects.all_with_deleted().get(pk=self.tmo1.pk)
         self.assertTrue(self.tmo1.deleted)
 
 class AuthorizationTest(BaseTest):
@@ -210,7 +210,7 @@ class UndeleteTest(BaseTest):
         self.tmo1.delete()
         self.assertEquals(self.cs_count+1, ChangeSet.objects.count())
         self.assertEquals(self.rs_count+56, SoftDeleteRecord.objects.count())
-        self.tmo1 = TestModelOne.objects.get(pk=self.tmo1.pk)
+        self.tmo1 = TestModelOne.objects.all_with_deleted().get(pk=self.tmo1.pk)
         self.tmo2 = TestModelOne.objects.get(pk=self.tmo2.pk)
         self.assertTrue(self.tmo1.deleted)
         self.assertFalse(self.tmo2.deleted)
@@ -227,7 +227,7 @@ class UndeleteTest(BaseTest):
         self.tmo1.delete()
         self.assertEquals(self.cs_count+1, ChangeSet.objects.count())
         self.assertEquals(self.rs_count+56, SoftDeleteRecord.objects.count())
-        self.tmo1 = TestModelOne.objects.get(pk=self.tmo1.pk)
+        self.tmo1 = TestModelOne.objects.all_with_deleted().get(pk=self.tmo1.pk)
         self.tmo2 = TestModelOne.objects.get(pk=self.tmo2.pk)
         self.assertTrue(self.tmo1.deleted)
         self.assertFalse(self.tmo2.deleted)
