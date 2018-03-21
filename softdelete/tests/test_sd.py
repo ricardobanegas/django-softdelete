@@ -10,7 +10,10 @@ from softdelete.test_softdelete_app.models import (
     TestModelThrough,
     TestModelSafeDeleteCascade,
     TestModelSoftDelete,
-    TestModelDefault
+    TestModelDefault,
+    TestModelSoftDeleteOnRelationLevelParent,
+    TestModelSoftDeleteOnRelationLevelChild,
+    TestModelSoftDeleteOnRelationLevelSecondChild,
 )
 from softdelete.models import *
 from softdelete.signals import *
@@ -61,6 +64,15 @@ class BaseTest(TestCase):
             parent=self.tmo_soft_delete_cascade)
         self.tmo_delete_default = TestModelDefault.objects.create(
             parent=self.tmo_soft_delete)
+        self.tmo_soft_delete_relation_parent = TestModelSoftDeleteOnRelationLevelParent.objects.create(
+            extra_int=100
+        )
+        self.tmo_soft_delete_relation_child = TestModelSoftDeleteOnRelationLevelChild.objects.create(
+            parent=self.tmo_soft_delete_relation_parent
+        )
+        self.tmo_soft_delete_relation_second_child = TestModelSoftDeleteOnRelationLevelSecondChild.objects.create(
+            parent=self.tmo_soft_delete_relation_parent
+        )
 
 
 class InitialTest(BaseTest):
@@ -153,6 +165,15 @@ class DeleteTest(BaseTest):
         self.tmo_soft_delete = TestModelSoftDelete.objects.all_with_deleted().filter(
             parent=self.tmo_soft_delete_cascade).first()
         self.assertIsNotNone(self.tmo_soft_delete.deleted_at)
+
+    def test_soft_delete_policy_on_relation(self):
+        self.tmo_soft_delete_relation_parent.delete()
+        self.tmo_soft_delete_relation_child.refresh_from_db()
+        self.assertIsNone(self.tmo_soft_delete_relation_child.deleted_at)
+
+        self.tmo_soft_delete_relation_second_child = TestModelSoftDeleteOnRelationLevelSecondChild.objects.all_with_deleted().filter(
+            parent=self.tmo_soft_delete_relation_parent).first()
+        self.assertIsNotNone(self.tmo_soft_delete_relation_second_child.deleted_at)
 
     def test_filter_delete(self):
         self._pretest()
