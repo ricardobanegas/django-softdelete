@@ -26,6 +26,24 @@ class TestModelSoftDelete(SoftDeleteObject):
     softdelete_policy = SoftDeleteObject.SOFT_DELETE
     parent = models.ForeignKey(TestModelSafeDeleteCascade, related_name='x')
 
+class TestModelSoftDeleteOnRelationLevelParent(SoftDeleteObject):
+    softdelete_relation_policy = {
+        'x': SoftDeleteObject.SOFT_DELETE,
+    }
+    extra_int = models.IntegerField()
+
+class TestModelSoftDeleteOnRelationLevelChild(SoftDeleteObject):
+    parent = models.ForeignKey(
+        TestModelSoftDeleteOnRelationLevelParent,
+        related_name='x'
+    )
+
+class TestModelSoftDeleteOnRelationLevelSecondChild(SoftDeleteObject):
+    parent = models.ForeignKey(
+        TestModelSoftDeleteOnRelationLevelParent,
+        related_name='y'
+    )
+
 class TestModelDefault(SoftDeleteObject):
     parent = models.ForeignKey(TestModelSoftDelete, related_name='y')
 
@@ -37,3 +55,6 @@ admin.site.register(TestModelThrough, SoftDeleteObjectAdmin)
 admin.site.register(TestModelSafeDeleteCascade, SoftDeleteObjectAdmin)
 admin.site.register(TestModelSoftDelete, SoftDeleteObjectAdmin)
 admin.site.register(TestModelDefault, SoftDeleteObjectAdmin)
+admin.site.register(TestModelSoftDeleteOnRelationLevelParent, SoftDeleteObjectAdmin)
+admin.site.register(TestModelSoftDeleteOnRelationLevelChild, SoftDeleteObjectAdmin)
+admin.site.register(TestModelSoftDeleteOnRelationLevelSecondChild, SoftDeleteObjectAdmin)

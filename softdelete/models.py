@@ -134,6 +134,13 @@ class SoftDeleteObject(models.Model):
 
     softdelete_policy = SOFT_DELETE_CASCADE
 
+    # In some cases we want to disable cascade for only some relations
+    # in this case we should use relation name as key and a SOFT_DELETE or
+    # SOFT_DELETE_CASCADE as a policy for only this one relation
+    # example:
+    # softdelete_relation_policy = {'buns': SOFT_DELETE}
+    softdelete_relation_policy = {}
+
     deleted_at = models.DateTimeField(blank=True, null=True, default=None)
     objects = SoftDeleteManager()
 
@@ -163,6 +170,11 @@ class SoftDeleteObject(models.Model):
 
     def _do_delete(self, changeset, related, force_policy=None):
         rel = related.get_accessor_name()
+
+        # if the policy for this relation is set to SOFT_DELETE
+        # we should just end processing of this relation
+        if self.softdelete_relation_policy.get(rel) == self.SOFT_DELETE:
+            return
 
         # Sometimes there is nothing to delete
         if not hasattr(self, rel):
