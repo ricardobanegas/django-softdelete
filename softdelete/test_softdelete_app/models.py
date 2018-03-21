@@ -28,7 +28,7 @@ class TestModelSoftDelete(SoftDeleteObject):
 
 class TestModelSoftDeleteOnRelationLevelParent(SoftDeleteObject):
     softdelete_relation_policy = {
-        'x': SoftDeleteObject.SOFT_DELETE,
+        'x': SoftDeleteObject.DO_NOTHING,
     }
     extra_int = models.IntegerField()
 
