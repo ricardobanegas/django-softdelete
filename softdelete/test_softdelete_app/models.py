@@ -29,6 +29,7 @@ class TestModelSoftDelete(SoftDeleteObject):
 class TestModelSoftDeleteOnRelationLevelParent(SoftDeleteObject):
     softdelete_relation_policy = {
         'x': SoftDeleteObject.DO_NOTHING,
+        'z': SoftDeleteObject.SET_NULL
     }
     extra_int = models.IntegerField()
 
@@ -43,6 +44,15 @@ class TestModelSoftDeleteOnRelationLevelSecondChild(SoftDeleteObject):
         TestModelSoftDeleteOnRelationLevelParent,
         related_name='y'
     )
+
+class TestModelSoftDeleteOnRelationLevelChildSetNull(SoftDeleteObject):
+    parent = models.ForeignKey(
+        TestModelSoftDeleteOnRelationLevelParent,
+        blank=True, null=True,
+        related_name='z'
+    )
+
+
 
 class TestModelDefault(SoftDeleteObject):
     parent = models.ForeignKey(TestModelSoftDelete, related_name='y')

@@ -132,6 +132,7 @@ class SoftDeleteObject(models.Model):
     SOFT_DELETE = 0
     SOFT_DELETE_CASCADE = 1
     DO_NOTHING = 2
+    SET_NULL = 3
 
     softdelete_policy = SOFT_DELETE_CASCADE
 
@@ -172,9 +173,13 @@ class SoftDeleteObject(models.Model):
     def _do_delete(self, changeset, related, force_policy=None):
         rel = related.get_accessor_name()
 
+        relation_policy = self.softdelete_relation_policy.get(rel)
+        if force_policy:
+            relation_policy = force_policy
+
         # if the policy for this relation is set to SOFT_DELETE
         # we should just end processing of this relation
-        if self.softdelete_relation_policy.get(rel) == self.DO_NOTHING:
+        if relation_policy == self.DO_NOTHING:
             return
 
         # Sometimes there is nothing to delete
@@ -187,20 +192,18 @@ class SoftDeleteObject(models.Model):
         if force_policy:
             delete_kwargs['force_policy'] = force_policy
 
-        try:
-            if related.one_to_one:
+        if related.one_to_one:
+            if relation_policy == self.SET_NULL:
+                obj = getattr(self, rel)
+                setattr(obj, related.field.name, None)
+                obj.save()
+            else:
                 getattr(self, rel).delete(**delete_kwargs)
+        elif related.one_to_many:
+            if relation_policy == self.SET_NULL:
+                getattr(self, rel).all().update(**{related.field.name: None})
             else:
                 getattr(self, rel).all().delete(**delete_kwargs)
-        except:
-            try:
-                getattr(self, rel).all().delete()
-            except:
-                try:
-                    getattr(self, rel).__class__.objects.all().delete(
-                        **delete_kwargs)
-                except:
-                    getattr(self, rel).__class__.objects.all().delete()
 
     def delete(self, *args, **kwargs):
         policy = kwargs.get('force_policy', self.softdelete_policy)
