@@ -14,6 +14,7 @@ from softdelete.test_softdelete_app.models import (
     TestModelSoftDeleteOnRelationLevelParent,
     TestModelSoftDeleteOnRelationLevelChild,
     TestModelSoftDeleteOnRelationLevelSecondChild,
+    TestModelSoftDeleteOnRelationLevelChildSetNull
 )
 from softdelete.models import *
 from softdelete.signals import *
@@ -71,6 +72,9 @@ class BaseTest(TestCase):
             parent=self.tmo_soft_delete_relation_parent
         )
         self.tmo_soft_delete_relation_second_child = TestModelSoftDeleteOnRelationLevelSecondChild.objects.create(
+            parent=self.tmo_soft_delete_relation_parent
+        )
+        self.tmo_soft_delete_relation_child_set_null = TestModelSoftDeleteOnRelationLevelChildSetNull.objects.create(
             parent=self.tmo_soft_delete_relation_parent
         )
 
@@ -170,6 +174,10 @@ class DeleteTest(BaseTest):
         self.tmo_soft_delete_relation_parent.delete()
         self.tmo_soft_delete_relation_child.refresh_from_db()
         self.assertIsNone(self.tmo_soft_delete_relation_child.deleted_at)
+
+        self.tmo_soft_delete_relation_child_set_null.refresh_from_db()
+        self.assertIsNone(self.tmo_soft_delete_relation_child_set_null.deleted_at)
+        self.assertIsNone(self.tmo_soft_delete_relation_child_set_null.parent)
 
         self.tmo_soft_delete_relation_second_child = TestModelSoftDeleteOnRelationLevelSecondChild.objects.all_with_deleted().filter(
             parent=self.tmo_soft_delete_relation_parent).first()
