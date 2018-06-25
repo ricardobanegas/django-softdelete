@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='django-softdelete-kourts',
-      version='0.8.3',
+      version='0.8.4',
       description='Soft delete support for Django ORM, with undelete and many more!',
       author='Kourts',
       author_email='support@kourts.com',
