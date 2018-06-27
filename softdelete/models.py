@@ -203,7 +203,11 @@ class SoftDeleteObject(models.Model):
             if relation_policy == self.SET_NULL:
                 getattr(self, rel).all().update(**{related.field.name: None})
             else:
-                getattr(self, rel).all().delete(**delete_kwargs)
+                qs = getattr(self, rel).all()
+                if isinstance(qs, SoftDeleteQuerySet):
+                    qs.delete(**delete_kwargs)
+                else:
+                    qs.delete()
 
     def delete(self, *args, **kwargs):
         policy = kwargs.get('force_policy', self.softdelete_policy)
