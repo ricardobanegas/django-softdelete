@@ -193,12 +193,15 @@ class SoftDeleteObject(models.Model):
             delete_kwargs['force_policy'] = force_policy
 
         if related.one_to_one:
+            obj = getattr(self, rel)
             if relation_policy == self.SET_NULL:
-                obj = getattr(self, rel)
                 setattr(obj, related.field.name, None)
                 obj.save()
             else:
-                getattr(self, rel).delete(**delete_kwargs)
+                if isinstance(obj, SoftDeleteObject):
+                    obj.delete(**delete_kwargs)
+                else:
+                    obj.delete()
         elif related.one_to_many:
             if relation_policy == self.SET_NULL:
                 getattr(self, rel).all().update(**{related.field.name: None})

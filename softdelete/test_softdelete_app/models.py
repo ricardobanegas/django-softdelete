@@ -52,7 +52,11 @@ class TestModelSoftDeleteOnRelationLevelChildSetNull(SoftDeleteObject):
         related_name='z'
     )
 
-
+class TestModelOneToOneRelationWithNonSoftDeleteObject(models.Model):
+    one_to_one = models.OneToOneField(
+        TestModelSoftDeleteOnRelationLevelParent,
+        related_name='xyz'
+    )
 
 class TestModelDefault(SoftDeleteObject):
     parent = models.ForeignKey(TestModelSoftDelete, related_name='y')
