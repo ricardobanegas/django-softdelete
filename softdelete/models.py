@@ -254,6 +254,13 @@ class SoftDeleteObject(models.Model):
             self.deleted_at = timezone.now()
             self.save()
 
+            models.signals.post_delete.send(sender=self.__class__,
+                                            instance=self,
+                                            using=using)
+            post_soft_delete.send(sender=self.__class__,
+                                  instance=self,
+                                  using=using)
+
             if policy == self.SOFT_DELETE_CASCADE:
                 all_related = [
                     f for f in self._meta.get_fields()
@@ -263,12 +270,6 @@ class SoftDeleteObject(models.Model):
                 for x in all_related:
                     self._do_delete(cs, x)
                 logging.debug("FINISHED SOFT DELETING RELATED %s", self)
-                models.signals.post_delete.send(sender=self.__class__,
-                                                instance=self,
-                                                using=using)
-                post_soft_delete.send(sender=self.__class__,
-                                      instance=self,
-                                      using=using)
 
     def _do_undelete(self, using='default'):
         pre_undelete.send(sender=self.__class__,
