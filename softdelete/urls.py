@@ -1,14 +1,14 @@
-from django.conf.urls import url, include
+from django.urls import path, include
 from softdelete.views import *
 
 urlpatterns = [
-    url(r'^changeset/(?P<changeset_pk>\d+?)/undelete/$',
+    path('changeset/<int:changeset_pk>/undelete/',
         ChangeSetUpdate.as_view(),
         name="softdelete.changeset.undelete"),
-    url(r'^changeset/(?P<changeset_pk>\d+?)/$',
+    path('changeset/<int:changeset_pk>/',
         ChangeSetDetail.as_view(),
         name="softdelete.changeset.view"),
-    url(r'^changeset/$',
+    path('changeset/',
         ChangeSetList.as_view(),
         name="softdelete.changeset.list"),
 ]
@@ -16,5 +16,5 @@ urlpatterns = [
 import sys
 if 'test' in sys.argv:
     from django.contrib import admin
-    admin.autodiscover()
-    urlpatterns.append(url(r'^admin/', include(admin.site.urls)))
+    urlpatterns.append(path('admin/', admin.site.urls))
+    urlpatterns.append(path('accounts/', include('django.contrib.auth.urls')))
